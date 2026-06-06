@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML Encryptor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0d0d0d;
+    --panel: #141414;
+    --border: #2a2a2a;
+    --accent: #e8ff47;
+    --accent2: #47d4ff;
+    --text: #e8e8e8;
+    --muted: #666;
+    --danger: #ff4757;
+    --success: #2ed573;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 42px);
+    letter-spacing: -1px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .card {
+    width: min(600px, 100%);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .step-badge {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-body { padding: 28px 24px; }
+
+  /* Drop zone */
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--accent);
+    background: rgba(232,255,71,0.03);
+  }
+
+  .dropzone input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .drop-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .drop-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .file-info {
+    display: none;
+    margin-top: 16px;
+    background: rgba(232,255,71,0.07);
+    border: 1px solid rgba(232,255,71,0.2);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--accent);
+    text-align: left;
+  }
+
+  .file-info.show { display: flex; align-items: center; gap: 10px; }
+  .file-info .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-info .fsize { color: var(--muted); flex-shrink: 0; }
+
+  /* Password section */
+  .pw-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .pw-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  input[type="password"], input[type="text"] {
+    width: 100%;
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 12px 44px 12px 14px;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 2px;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,255,71,0.08);
+  }
+
+  .eye-btn {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 16px; padding: 2px;
+    transition: color 0.15s;
+  }
+  .eye-btn:hover { color: var(--text); }
+
+  .strength-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s, background 0.3s;
+  }
+
+  /* Encrypt button */
+  .encrypt-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s, box-shadow 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+
+  .encrypt-btn:hover:not(:disabled) {
+    box-shadow: 0 0 30px rgba(232,255,71,0.25);
+    transform: translateY(-1px);
+  }
+
+  .encrypt-btn:active:not(:disabled) { transform: scale(0.98); }
+
+  .encrypt-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* Progress */
+  #progressSection {
+    display: none;
+    margin-top: 20px;
+  }
+
+  .progress-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent2);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(71,212,255,0.5);
+  }
+
+  .progress-status {
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 1px;
+  }
+
+  /* Output */
+  #outputSection {
+    display: none;
+    margin-top: 24px;
+  }
+
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .output-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--success);
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .download-btn {
+    background: var(--success);
+    color: #000;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.15s, box-shadow 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .download-btn:hover {
+    box-shadow: 0 0 20px rgba(46,213,115,0.3);
+    opacity: 0.9;
+  }
+
+  .output-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .output-stats span { color: var(--text); }
+
+  /* Info box */
+  .info-box {
+    margin-top: 32px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+
+  .info-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .info-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .info-list li {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    display: flex; gap: 8px;
+  }
+
+  .info-list li::before { content: '→'; color: var(--accent); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+
+  /* Error */
+  .error-msg {
+    display: none;
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--danger);
+    letter-spacing: 1px;
+  }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">HTML<span>Lock</span></div>
+  <div class="tagline">AES-256 File Encryptor</div>
+</header>
+
+<div class="card">
+  <div class="card-header">
+    <div class="step-badge">1</div>
+    Upload your HTML file
+  </div>
+  <div class="card-body">
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept=".html,.htm" />
+      <span class="drop-icon">📄</span>
+      <div class="drop-title">Drop your HTML file here</div>
+      <div class="drop-sub">or click to browse — .html / .htm</div>
+    </div>
+    <div class="file-info" id="fileInfo">
+      <span>📎</span>
+      <span class="fname" id="fileName"></span>
+      <span class="fsize" id="fileSize"></span>
+    </div>
+  </div>
+</div>
+
+<div style="height:16px"></div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="step-badge">2</div>
+    Set encryption password
+  </div>
+  <div class="card-body">
+    <div class="pw-row">
+      <div class="pw-wrap">
+        <input type="password" id="pwInput" placeholder="Enter password..." autocomplete="new-password" oninput="updateStrength()" />
+        <button class="eye-btn" onclick="toggleEye('pwInput', this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <div class="pw-row">
+      <div class="pw-wrap">
+        <input type="password" id="pwConfirm" placeholder="Confirm password..." autocomplete="new-password" />
+        <button class="eye-btn" onclick="toggleEye('pwConfirm', this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+
+    <button class="encrypt-btn" id="encryptBtn" onclick="startEncrypt()" disabled>
+      <span>🔒</span> Encrypt File
+    </button>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div id="progressSection">
+      <div class="divider"></div>
+      <div class="progress-label">ENCRYPTING</div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-status" id="progressStatus">Deriving key...</div>
+    </div>
+
+    <div id="outputSection">
+      <div class="divider"></div>
+      <div class="output-header">
+        <div class="output-label">✓ Encrypted successfully</div>
+        <button class="download-btn" id="downloadBtn" onclick="downloadFile()">⬇ Download</button>
+      </div>
+      <div class="output-stats" id="outputStats"></div>
+    </div>
+  </div>
+</div>
+
+<div style="height:16px"></div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="step-badge" style="background:var(--accent2)">i</div>
+    How it works
+  </div>
+  <div class="card-body">
+    <ul class="info-list">
+      <li>Your HTML file is read and encrypted with AES-256-GCM in the browser</li>
+      <li>Password is hashed via PBKDF2-SHA256 (200,000 iterations)</li>
+      <li>The output is a self-contained HTML file with a password prompt</li>
+      <li>Wrong password = the original content is never revealed</li>
+      <li>Your file never leaves your device — 100% client-side</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  let fileContent = null;
+  let encryptedBlob = null;
+  let outputFilename = 'encrypted.html';
+
+  // --- File handling ---
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+  });
+
+  function loadFile(file) {
+    if (!file.name.match(/\.html?$/i)) {
+      showError('Please select an HTML file (.html or .htm)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      fileContent = e.target.result;
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = formatSize(file.size);
+      document.getElementById('fileInfo').classList.add('show');
+      outputFilename = file.name.replace(/\.html?$/i, '') + '_locked.html';
+      checkReady();
+    };
+    reader.readAsText(file);
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  // --- Password strength ---
+  function updateStrength() {
+    const pw = document.getElementById('pwInput').value;
+    const fill = document.getElementById('strengthFill');
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    const pct = (score / 5) * 100;
+    const colors = ['#ff4757','#ff6b35','#ffcc00','#2ed573','#47d4ff'];
+    fill.style.width = pct + '%';
+    fill.style.background = colors[Math.min(score - 1, 4)] || 'transparent';
+    checkReady();
+  }
+
+  function checkReady() {
+    const pw = document.getElementById('pwInput').value;
+    document.getElementById('encryptBtn').disabled = !(fileContent && pw.length >= 1);
+  }
+
+  function toggleEye(id, btn) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  function setProgress(pct, label) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressStatus').textContent = label;
+  }
+
+  // --- Encryption ---
+  async function startEncrypt() {
+    const pw = document.getElementById('pwInput').value;
+    const pw2 = document.getElementById('pwConfirm').value;
+
+    if (pw2 && pw !== pw2) { showError('Passwords do not match'); return; }
+    if (!fileContent) { showError('No file loaded'); return; }
+
+    document.getElementById('encryptBtn').disabled = true;
+    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('outputSection').style.display = 'none';
+
+    try {
+      setProgress(10, 'Importing key material...');
+      await tick();
+
+      const enc = new TextEncoder();
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv   = crypto.getRandomValues(new Uint8Array(12));
+
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw', enc.encode(pw), 'PBKDF2', false, ['deriveKey']
+      );
+
+      setProgress(30, 'Deriving AES-256 key (PBKDF2 × 200,000)...');
+      await tick();
+
+      const aesKey = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt']
+      );
+
+      setProgress(60, 'Encrypting file contents...');
+      await tick();
+
+      const plainBytes = enc.encode(fileContent);
+      const cipherBuf  = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, plainBytes);
+
+      setProgress(80, 'Building output file...');
+      await tick();
+
+      const saltB64   = btoa(String.fromCharCode(...salt));
+      const ivB64     = btoa(String.fromCharCode(...iv));
+      const dataB64   = btoa(String.fromCharCode(...new Uint8Array(cipherBuf)));
+      const origSize  = formatSize(new Blob([fileContent]).size);
+      const encSize   = formatSize(cipherBuf.byteLength);
+
+      const outputHtml = buildLockedPage(saltB64, ivB64, dataB64);
+
+      encryptedBlob = new Blob([outputHtml], { type: 'text/html' });
+      setProgress(100, 'Done!');
+
+      document.getElementById('outputStats').innerHTML =
+        `Original: <span>${origSize}</span>&nbsp;&nbsp;|&nbsp;&nbsp;Encrypted: <span>${encSize}</span>`;
+      document.getElementById('outputSection').style.display = 'block';
+
+    } catch (e) {
+      showError('Encryption failed: ' + e.message);
+      document.getElementById('progressSection').style.display = 'none';
+    }
+
+    document.getElementById('encryptBtn').disabled = false;
+  }
+
+  function tick() { return new Promise(r => setTimeout(r, 30)); }
+
+  function downloadFile() {
+    if (!encryptedBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(encryptedBlob);
+    a.download = outputFilename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // --- Generate the locked output page ---
+  function buildLockedPage(salt, iv, data) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔒 Protected Page</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0d0d0d;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'JetBrains Mono',monospace;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.012) 2px,rgba(255,255,255,.012) 4px);pointer-events:none;z-index:50;}
+  .box{width:min(420px,92vw);background:#141414;border:1px solid #222;border-radius:14px;padding:40px 32px;box-shadow:0 0 60px rgba(0,0,0,.8);animation:drop .4s ease-out}
+  @keyframes drop{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+  .icon{text-align:center;font-size:44px;margin-bottom:16px}
+  h1{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#e8e8e8;text-align:center;margin-bottom:6px;letter-spacing:-0.5px}
+  .sub{text-align:center;font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:32px}
+  .pw-wrap{position:relative;margin-bottom:14px}
+  input{width:100%;background:#0d0d0d;border:1px solid #2a2a2a;color:#e8e8e8;font-family:'JetBrains Mono',monospace;font-size:15px;padding:14px 46px 14px 16px;border-radius:8px;outline:none;transition:border-color .2s,box-shadow .2s;letter-spacing:3px}
+  input:focus{border-color:#e8ff47;box-shadow:0 0 0 3px rgba(232,255,71,.08)}
+  .eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;cursor:pointer;font-size:16px;transition:color .15s}
+  .eye:hover{color:#e8e8e8}
+  .btn{width:100%;background:#e8ff47;color:#000;border:none;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;padding:15px;border-radius:8px;cursor:pointer;transition:box-shadow .2s,transform .1s;margin-top:4px}
+  .btn:hover{box-shadow:0 0 28px rgba(232,255,71,.25);transform:translateY(-1px)}
+  .btn:active{transform:scale(.98)}
+  .err{display:none;margin-top:12px;text-align:center;font-size:11px;color:#ff4757;letter-spacing:1px}
+  .err.show{display:block}
+  .prog{display:none;margin-top:16px}
+  .prog-bar{height:3px;background:#222;border-radius:2px;overflow:hidden}
+  .prog-fill{height:100%;background:#47d4ff;border-radius:2px;width:0%;transition:width .3s;box-shadow:0 0 8px rgba(71,212,255,.5)}
+  .prog-label{font-size:10px;color:#47d4ff;letter-spacing:1px;margin-top:8px;text-align:center}
+  .hint{margin-top:20px;text-align:center;font-size:10px;color:#333;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="icon">🔒</div>
+  <h1>Protected Page</h1>
+  <div class="sub">Enter password to unlock</div>
+  <div class="pw-wrap">
+    <input type="password" id="pw" placeholder="Password..." autofocus onkeydown="if(event.key==='Enter')unlock()" />
+    <button class="eye" onclick="var i=document.getElementById('pw');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">👁</button>
+  </div>
+  <button class="btn" onclick="unlock()">Unlock →</button>
+  <div class="err" id="err">Incorrect password — try again</div>
+  <div class="prog" id="prog">
+    <div class="prog-bar"><div class="prog-fill" id="pf"></div></div>
+    <div class="prog-label" id="pl">Verifying...</div>
+  </div>
+  <div class="hint">AES-256-GCM encrypted</div>
+</div>
+
+<script>
+const SALT='${salt}',IV='${iv}',DATA='${data}';
+function b64(s){const b=atob(s);return new Uint8Array([...b].map(c=>c.charCodeAt(0)))}
+function sp(p,l){document.getElementById('pf').style.width=p+'%';document.getElementById('pl').textContent=l}
+async function unlock(){
+  const pw=document.getElementById('pw').value;
+  if(!pw)return;
+  document.getElementById('err').classList.remove('show');
+  document.getElementById('prog').style.display='block';
+  sp(15,'Importing key...');
+  await new Promise(r=>setTimeout(r,20));
+  try{
+    const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+    sp(35,'Deriving key (PBKDF2 × 200,000)...');await new Promise(r=>setTimeout(r,20));
+    const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64(SALT),iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+    sp(70,'Decrypting...');await new Promise(r=>setTimeout(r,20));
+    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(IV)},k,b64(DATA));
+    sp(100,'Done!');
+    const html=new TextDecoder().decode(plain);
+    await new Promise(r=>setTimeout(r,200));
+    document.open();document.write(html);document.close();
+  }catch(e){
+    document.getElementById('prog').style.display='none';
+    document.getElementById('err').classList.add('show');
+    document.getElementById('pw').value='';
+    document.getElementById('pw').focus();
+  }
+}
+<\/script>
+</body>
+</html>`;
+  }
+
+  document.getElementById('pwInput').addEventListener('input', checkReady);
+  document.getElementById('pwConfirm').addEventListener('input', checkReady);
+</script>
+</body>
+</html>
